@@ -1,7 +1,5 @@
-#include <stdlib.h>
 #include <stdio.h>
-#include <memory.h>
-#include <time.h>
+#include <time.h> // Only used to randomize the seed
 #include <Windows.h>
 
 #define MS_BACKGROUND_WHITE (BACKGROUND_RED | BACKGROUND_GREEN | BACKGROUND_BLUE | BACKGROUND_INTENSITY)
@@ -24,7 +22,6 @@
 // * Tem algumas coisas meio hard-coded, dar uma ajeitada nisso adicionando mais #define e coisas do tipo
 // * Mudar o nome de algumas variáveis (principalmente dentro da função ms_grid_update) q tão mto aleatórios e sem sentido ou 
 //   que tão dificultando o entendimento
-// * Reduzir ao máximo o número de includes
 // * Adicionar mais umas quebras de linhas em algumas linhas muito longas, ou melhor, tentar diminuir elas dando uma abstraida melhor
 // * Se pa que da pra melhorar ainda mais a eficiencia do algoritmo de achar todos os tiles vazios
 // * Fazer uma interfacezinha mostrando algumas infos úteis tipo tiles restantes pra encontrar, etc...
@@ -43,10 +40,7 @@
 // * Talvez fazer a melodia de I Me Mine de fundo meio que em 8-bits usando a WINAPI
 // * Talvez fazer um sistema de escolha de temas pra mudar as cores e a musiquinha de fundo
 // * Adicionar uma licença (copiar a mesma de algum outro projeto, como a do shdiopp)
-
-// * TODO PRINCIPAL: Upar pro Github o mais rapido possivel pra ir atualizando a medida que eu implemento coisas novas (e talvez mudar 
-//                   o nome de "Minesweeper" pra algo mais autoral). Talvez chamar de ImeSweeper pra homenagear i me mine i me mine i 
-//                   me mine 🎶 (de um jeito q só eu vo entender)
+// * Deixar o repositório no github mais organizado, mais bonito e com mais informações. Quando ficar melhor tirar ele do privado
 
 typedef struct
 {
