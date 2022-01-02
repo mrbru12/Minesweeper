@@ -14,6 +14,9 @@
 #define MS_GRID_MARKED_FOREGROUND 0
 #define MS_GRID_MARKED_CHAR L'X'
 
+// A percent value between 0% and 100% representing the ideal maximum bomb coverage on the grid. Default: 65%
+#define MS_GRID_MAX_BOMB_COVERAGE 65
+
 #define MS_V2_NULL (ms_v2){ -1, -1 }
 
 // TODO: 
@@ -260,14 +263,18 @@ CHAR_INFO ms_grid_get_tile_char_info(ms_grid *grid, ms_v2 tile_pos)
     return char_info;
 }
 
-// TODO: Talvez mudar o nome dessa função pra "ms_grid_draw_tile" ou algo assim pra ficar mais claro oque ela faz
 void ms_grid_set_tile_char_info(ms_grid *grid, ms_v2 tile_pos, CHAR_INFO char_info)
 {
     SMALL_RECT write_region = (SMALL_RECT){ .Left = tile_pos.x, .Top = tile_pos.y, .Right = tile_pos.x, .Bottom = tile_pos.y };
     WriteConsoleOutput(GetStdHandle(STD_OUTPUT_HANDLE), &char_info, (COORD){ 1, 1 }, (COORD){ 0, 0 }, &write_region);
 }
 
-// TODO: Talvez mudar o nome dessa func pra ms_grid_print_field já que é um Mine Field
+// Returns the ideal maximum amount of bombs on the grid
+int ms_grid_get_max_bombs(ms_grid *grid)
+{
+    return (grid->width * grid->height) * max(min(MS_GRID_MAX_BOMB_COVERAGE, 100), 0) / 100;
+}
+
 void ms_grid_print_board(ms_grid *grid)
 {
     for (int y = 0; y < grid->height; y++)
@@ -278,9 +285,17 @@ void ms_grid_print_board(ms_grid *grid)
 }
 
 // If find_blank == 1, generates bombs on the grid until the desired tile is a blank space
-// Returns the number of iterations until success
-int ms_grid_generate_bombs(ms_grid *grid, ms_v2 tile_pos, int find_blank) // TODO: Precisa de algum tipo de check pra saber se é possível achar um tile vazio no grid, de acordo com quantidade de bombas e da width e height
-{                                                                         // TODO: Ta precisando urgentemente de uma melhora na performace, em grids com muitas bombas ta muito lento
+// Returns the number of tries until successfully generated, or -1 on failure
+int ms_grid_generate_bombs(ms_grid *grid, ms_v2 tile_pos, int find_blank) // TODO: Ta precisando urgentemente de uma melhora na performace, em grids com muitas bombas ta muito lento
+{
+    if (grid->bombs < grid->width * grid->height)
+    {
+        if (find_blank && grid->bombs > ms_grid_get_max_bombs(grid)) // Fail if the chance of finding a blank spot is too low
+            return -1;
+    }
+    else // Fail if the grid is entirely full of bombs
+        return -1;
+    
     ms_tile *tile = ms_grid_get_tile(grid, tile_pos);
 
     int tries = 0; // Number of tries
@@ -525,7 +540,7 @@ void ms_grid_update(ms_grid *grid)
                     }
                     else // If hovered tile is a bomb
                     {
-                        Beep(500, 750);
+                        // Beep(500, 750);
                         // return; // exit(0);
                     }
                 }
@@ -572,7 +587,7 @@ int main()
     SetConsoleMode(std_in_handle, ENABLE_EXTENDED_FLAGS | (default_mode & ~ENABLE_QUICK_EDIT_MODE));
 
     // Run Minesweeper
-    ms_grid *grid = ms_grid_create(20, 10, 40, time(NULL)); // 20, 10, 40, time(NULL)
+    ms_grid *grid = ms_grid_create(40, 20, 520, time(NULL)); // 20, 10, 40, time(NULL)
     ms_grid_print_board(grid);
     ms_grid_update(grid);
     ms_grid_destroy(grid);
