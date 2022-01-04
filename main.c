@@ -27,7 +27,8 @@
 //   que tão dificultando o entendimento
 // * Adicionar mais umas quebras de linhas em algumas linhas muito longas, ou melhor, tentar diminuir elas dando uma abstraida melhor
 // * Se pa que da pra melhorar ainda mais a eficiencia do algoritmo de achar todos os tiles vazios
-// * Fazer uma interfacezinha mostrando algumas infos úteis tipo tiles restantes pra encontrar, etc...
+// * Fazer uma UI com umas funções simples de printar Labels e Buttons. Com ela fazer uma interfacezinha mostrando algumas infos úteis 
+//   tipo tiles restantes pra encontrar, etc...
 // * Dar uma reduzida em códigos duplicados (principalmente checks feitos desnecessáriamente mais de uma vez em ifs aninhados)
 // * Talvez aproveitar e usar um pouco de multithreading pra melhorar ao maximo a performace de algumas partes (principalmente a de 
 //   gerar o grid com as bombas)
@@ -45,6 +46,10 @@
 // * Adicionar uma licença (copiar a mesma de algum outro projeto, como a do shdiopp)
 // * Deixar o repositório no github mais organizado, mais bonito e com mais informações. Quando ficar melhor tirar ele do privado
 
+// +===================+
+//  2D VECTOR FUNCTIONS 
+// +===================+
+
 typedef struct
 {
     int x, y;
@@ -59,6 +64,10 @@ COORD ms_v2_as_coord(ms_v2 vec)
 {
     return (COORD){ vec.x, vec.y };
 }
+
+// +================================+
+//  LINKED LIST QUEUE IMPLEMENTATION
+// +================================+
 
 typedef struct ms_node_v2 ms_node_v2;
 struct ms_node_v2
@@ -162,6 +171,49 @@ int ms_queue_v2_find(ms_queue_v2 *queue, ms_v2 vec)
     return -1;
 }
 
+// +===============+
+//  DEBUG FUNCTIONS
+// +===============+
+
+void ms_debug_log_int(ms_v2 pos, const char *title, int value)
+{
+    HANDLE std_out_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+
+    char log_str[256];
+    sprintf(log_str, "%s: %d", title, value);
+
+    DWORD chars_written;
+    // FillConsoleOutputCharacter(std_out_handle, L' ', sizeof(log_str), ms_v2_as_coord(pos), &chars_written);
+    WriteConsoleOutputCharacterA(std_out_handle, log_str, strlen(log_str), ms_v2_as_coord(pos), &chars_written);
+}
+
+void ms_debug_log_double(ms_v2 pos, const char *title, double value)
+{
+    HANDLE std_out_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+
+    char log_str[256];
+    sprintf(log_str, "%s: %.6lf", title, value);
+
+    DWORD chars_written;
+    // FillConsoleOutputCharacter(std_out_handle, L' ', sizeof(log_str), ms_v2_as_coord(pos), &chars_written);
+    WriteConsoleOutputCharacterA(std_out_handle, log_str, strlen(log_str), ms_v2_as_coord(pos), &chars_written);
+}
+
+clock_t ms_debug_timer_start()
+{
+    return clock();
+}
+
+// Returns the delta time in seconds
+double ms_debug_timer_stop(clock_t timer, ms_v2 print_pos)
+{
+    return (double)((clock() - timer) / CLOCKS_PER_SEC);
+}
+
+// +========================================+
+//  MINESWEEPER GAME AND GRID IMPLEMENTATION
+// +========================================+
+
 typedef struct 
 {
     int is_bomb, is_hidden, is_marked;
@@ -213,17 +265,6 @@ void ms_grid_clear_bombs(ms_grid *grid)
             grid->tiles[y][x] = (ms_tile){ .is_bomb = 0, .is_hidden = 1, .is_marked = grid->tiles[y][x].is_marked, .adjacent_bombs = 0 };
     }
 }
-
-// TODO: Criar umas funçõezinhas pra debug
-// clock_t ms_debug_start_timer()
-// {
-//     return clock();
-// }
-// 
-// void ms_debug_stop_timer(clock_t timer, ms_v2 print_pos)
-// {
-//     WriteConsoleOutput("Delta time: ")
-// }
 
 int ms_grid_is_valid_pos(ms_grid *grid, ms_v2 tile_pos)
 {
@@ -288,6 +329,7 @@ void ms_grid_print_board(ms_grid *grid)
 // Returns the number of tries until successfully generated, or -1 on failure
 int ms_grid_generate_bombs(ms_grid *grid, ms_v2 tile_pos, int find_blank) // TODO: Ta precisando urgentemente de uma melhora na performace, em grids com muitas bombas ta muito lento
 {
+    // Some security checks to prevent this function from hanging or running indefinitely
     if (grid->bombs < grid->width * grid->height)
     {
         if (find_blank && grid->bombs > ms_grid_get_max_bombs(grid)) // Fail if the chance of finding a blank spot is too low
@@ -489,13 +531,8 @@ void ms_grid_update(ms_grid *grid)
                         int tries = ms_grid_generate_bombs(grid, hovered_tile_pos, 1);
 
                         // TODO: Isso aqui ta só pra debug por enquanto
-                        {
-                            char tries_str[16];
-                            sprintf(tries_str, "Tries: %d", tries);
-
-                            DWORD chars_written;
-                            WriteConsoleOutputCharacterA(GetStdHandle(STD_OUTPUT_HANDLE), tries_str, strlen(tries_str), (COORD){ 0, grid->height }, &chars_written);
-                        }
+                        // TODO: Tem algum probleminha no print do grid ou em alguma coisa assim pq se eu dou log na pos grid->height fica preto
+                        ms_debug_log_int((ms_v2){ 0, grid->height + 1 }, "Tries", tries);
                     }
 
                     if (!hovered_tile->is_bomb) // If hovered tile is not a bomb
@@ -510,37 +547,16 @@ void ms_grid_update(ms_grid *grid)
 
                         // TODO: Isso aqui ta só pra debug por enquanto, pra ver alguns valores úteis
                         {
-                            HANDLE std_out_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+                            ms_debug_log_int((ms_v2){ 0, grid->height + 2 }, "Revealed tiles", (grid->width * grid->height) - grid->hidden_count);
 
                             DWORD chars_written;
-
-                            char revealed_str[24];
-                            sprintf(revealed_str, "Revealed tiles: %d", (grid->width * grid->height) - grid->hidden_count);
-                            WriteConsoleOutputCharacterA(std_out_handle, revealed_str, strlen(revealed_str), (COORD){ 16 + 1, grid->height }, &chars_written);
-
-                            char left_str[24];
-                            sprintf(left_str, "Tiles left: %d", grid->hidden_count - grid->bombs);                    
-                            FillConsoleOutputCharacter(std_out_handle, L' ', sizeof(left_str), (COORD){ 16 + 1 + sizeof(revealed_str) + 1, grid->height }, &chars_written);
-                            WriteConsoleOutputCharacterA(std_out_handle, left_str, strlen(left_str), (COORD){ 16 + 1 + sizeof(revealed_str) + 1, grid->height }, &chars_written);
-
-                            // char delta_time_str[32];
-                            // sprintf(delta_time_str, "Time taken: %.5lf secs", delta_time);
-                            // FillConsoleOutputAttribute(std_out_handle, MS_BACKGROUND_WHITE, strlen(delta_time_str), (COORD){ 16 + 1 + sizeof(revealed_str) + 1 + sizeof(left_str) + 1, 0 }, &chars_written);
-                            // WriteConsoleOutputCharacterA(std_out_handle, delta_time_str, strlen(delta_time_str), (COORD){ 16 + 1 + sizeof(revealed_str) + 1 + sizeof(left_str) + 1, 0 }, &chars_written);
-
-                            // char search_iterations_str[64];
-                            // sprintf(search_iterations_str, "Search iterations: %d", search_iterations);                    
-                            // FillConsoleOutputAttribute(std_out_handle, MS_BACKGROUND_WHITE, strlen(search_iterations_str), (COORD){ 16 + 1 + sizeof(revealed_str) + 1 + sizeof(left_str) + 1, 1 }, &chars_written);
-                            // WriteConsoleOutputCharacterA(std_out_handle, search_iterations_str, strlen(search_iterations_str), (COORD){ 16 + 1 + sizeof(revealed_str) + 1 + sizeof(left_str) + 1, 1 }, &chars_written);
-
-                            // char marked_str[16];
-                            // sprintf(marked_str, "Tile marked: %d", grid->tiles[hovered_tile_pos.y][hovered_tile_pos.x].is_marked);
-                            // WriteConsoleOutputCharacterA(std_out_handle, marked_str, strlen(marked_str), (COORD){ 0, grid->height + 1 }, &chars_written);
+                            FillConsoleOutputCharacter(GetStdHandle(STD_OUTPUT_HANDLE), L' ', 64, (COORD){ 0, grid->height }, &chars_written);
+                            ms_debug_log_int((ms_v2){ 0, grid->height + 3 }, "Tiles left", grid->hidden_count - grid->bombs);
                         }
                     }
                     else // If hovered tile is a bomb
                     {
-                        // Beep(500, 750);
+                        Beep(500, 750);
                         // return; // exit(0);
                     }
                 }
@@ -568,6 +584,10 @@ void ms_grid_update(ms_grid *grid)
     }
 }
 
+// +=============+
+//  MAIN FUNCTION
+// +=============+
+
 int main()
 {
     HANDLE std_in_handle = GetStdHandle(STD_INPUT_HANDLE), std_out_handle = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -587,7 +607,7 @@ int main()
     SetConsoleMode(std_in_handle, ENABLE_EXTENDED_FLAGS | (default_mode & ~ENABLE_QUICK_EDIT_MODE));
 
     // Run Minesweeper
-    ms_grid *grid = ms_grid_create(40, 20, 520, time(NULL)); // 20, 10, 40, time(NULL)
+    ms_grid *grid = ms_grid_create(20, 10, 40, time(NULL)); // 20, 10, 40, time(NULL)
     ms_grid_print_board(grid);
     ms_grid_update(grid);
     ms_grid_destroy(grid);
