@@ -548,7 +548,8 @@ void ms_grid_update(ms_grid *grid)
                         // TODO: Isso aqui ta só pra debug por enquanto, pra ver alguns valores úteis
                         {
                             ms_debug_log_int((ms_v2){ 0, grid->height + 2 }, "Revealed tiles", (grid->width * grid->height) - grid->hidden_count);
-
+                            
+                            // TODO: Talvez eu precise dar um jeito de implementar isso aqui dentro do log, pra limpar em baixo da string
                             DWORD chars_written;
                             FillConsoleOutputCharacter(GetStdHandle(STD_OUTPUT_HANDLE), L' ', 64, (COORD){ 0, grid->height }, &chars_written);
                             ms_debug_log_int((ms_v2){ 0, grid->height + 3 }, "Tiles left", grid->hidden_count - grid->bombs);
@@ -607,7 +608,7 @@ int main()
     SetConsoleMode(std_in_handle, ENABLE_EXTENDED_FLAGS | (default_mode & ~ENABLE_QUICK_EDIT_MODE));
 
     // Run Minesweeper
-    ms_grid *grid = ms_grid_create(20, 10, 40, time(NULL)); // 20, 10, 40, time(NULL)
+    ms_grid *grid = ms_grid_create(9, 9, 24, time(NULL)); // 20, 10, 40, time(NULL)
     ms_grid_print_board(grid);
     ms_grid_update(grid);
     ms_grid_destroy(grid);
